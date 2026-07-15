@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Fortuna Biznes — Xodimlar bazasi</title>
   <link rel="stylesheet" href="style.css">
-  <!-- Excel bilan ishlash uchun SheetJS kutubxonasi -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -116,13 +114,24 @@
 
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="closeModal()">Bekor qilish</button>
-        <!-- type="submit" va id="saveBtn" tugmani faollashtiradi -->
         <button type="submit" class="btn btn-red" id="saveBtn">Tizimga qo'shish</button>
       </div>
     </form>
   </div>
 </div>
 
+<!-- ========================================== -->
+<!-- KUTUBXONALAR VA SKRIPTLAR (Yuklanish tartibi) -->
+<!-- ========================================== -->
+
+<!-- 1. Supabase kutubxonasi (Eng birinchi yuklanishi shart!) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- 2. Excel bilan ishlash uchun SheetJS kutubxonasi -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<!-- 3. Sizning shaxsiy JS kodingiz (Kutubxonalardan keyin o'qiladi) -->
 <script src="app.js"></script>
+
 </body>
 </html>

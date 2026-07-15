@@ -1,11 +1,20 @@
-// SUPABASE SOZLAMALARI
+// ==========================================
+// 1. SUPABASE SOZLAMALARI VA MIJOZINI YARATISH
+// ==========================================
 const SUPABASE_URL = "https://xfvylqtqakwexcjqjktu.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhmdnlscXRxYWt3ZXhjamdqa3R1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwODA3OTgsImV4cCI6MjA5OTY1Njc5OH0.dl3Icafhlplh1_H6F8FOFde7ZflCEJgCcJxlyRgPGKs";
 
-// Supabase mijozini yaratamiz
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Xatoliklarni oldini olish uchun global o'zgaruvchini avval let bilan e'lon qilamiz
+let supabaseClient;
+try {
+    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} catch (err) {
+    console.error("Supabase yuklashda xatolik yuz berdi:", err);
+}
 
-// Asosiy xodimlar massivi va global o'zgaruvchilar
+// ==========================================
+// 2. GLOBAL O'ZGARUVCHILAR
+// ==========================================
 let EMPLOYEES = [];
 let selectedId = null;
 let searchQuery = "";
@@ -13,6 +22,10 @@ let deptFilter = "all";
 
 // Brauzer yuklanganda dastlabki ma'lumotlarni olish
 window.onload = async function() {
+    // Agar CDN orqali yuklanish biroz kechikkan bo'lsa, bu yerda qayta tekshirib yaratamiz
+    if (!supabaseClient && typeof supabase !== 'undefined') {
+        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
     await fetchEmployees();
 };
 
@@ -22,8 +35,17 @@ function initApp() {
     render();
 }
 
+// ==========================================
+// 3. MA'LUMOTLAR BILAN ISHLASH (API & JSON)
+// ==========================================
+
 // Bazadan ma'lumotlarni tortib olish
 async function fetchEmployees() {
+    if (!supabaseClient) {
+        console.error("Supabase mijoz (client) yuklanmagan!");
+        return;
+    }
+
     const { data, error } = await supabaseClient
         .from('employees')
         .select('*');
@@ -85,6 +107,10 @@ async function loadInitialDataFromJSON() {
     }
 }
 
+// ==========================================
+// 4. YORDAMCHI FUNKSIYALAR VA FORMATLASH
+// ==========================================
+
 // Bo'lim filtri ro'yxatini shakllantirish
 function buildDeptFilter() {
     const deptSelect = document.getElementById("deptFilter");
@@ -140,11 +166,13 @@ function onSearch(v) {
     render();
 }
 
+// Bo'lim o'zgarganda ishlaydi
 function onDeptChange(v) {
     deptFilter = v;
     render();
 }
 
+// Xodim tanlanganda ishlaydi
 function selectEmployee(id) {
     selectedId = id;
     renderDetail();
@@ -275,7 +303,9 @@ function renderDetail() {
     `;
 }
 
-// 1. EXCEL/JSON IMPORT QILISH
+// ==========================================
+// 5. EXCEL / JSON IMPORT QILISH
+// ==========================================
 function triggerImport() {
     document.getElementById("excelFileInput").click();
 }
@@ -352,7 +382,9 @@ async function handleFileImport(event) {
     event.target.value = ''; // Inputni tozalaymiz
 }
 
-// MODAL OYNALARNI BOSHQARISH
+// ==========================================
+// 6. MODAL OYNALARNI BOSHQARISH (ADD/EDIT)
+// ==========================================
 function openAddModal() {
     document.getElementById("modalTitle").innerText = "Yangi xodim qo'shish";
     document.getElementById("employeeForm").reset();
