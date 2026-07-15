@@ -1,8 +1,15 @@
 // Baza boshlang'ich holati (LocalStorage tekshiriladi)
+// SUPABASE SOZLAMALARI
+const SUPABASE_URL = "https://xfvylqtqakwexcjqjktu.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhmdnlscXRxYWt3ZXhjamdqa3R1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwODA3OTgsImV4cCI6MjA5OTY1Njc5OH0.dl3Icafhlplh1_H6F8FOFde7ZflCEJgCcJxlyRgPGKs";
+
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 let EMPLOYEES = JSON.parse(localStorage.getItem('fortuna_employees')) || [];
 let selectedId = null;
 let searchQuery = "";
 let deptFilter = "all";
+
 
 // Brauzer birinchi marta ochilganda dastlabki ma'lumotlarni yuklash (tizim bo'sh bo'lsa)
 window.onload = function() {
