@@ -1,8 +1,8 @@
 // SUPABASE SOZLAMALARI
 const SUPABASE_URL = "https://xfvylqtqakwexcjqjktu.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhmdnlscXRxYWt3ZXhjamdqa3R1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwODA3OTgsImV4cCI6MjA5OTY1Njc5OH0.dl3Icafhlplh1_H6F8FOFde7ZflCEJgCcJxlyRgPGKs"; // o'zingizning to'liq kalitingiz
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhmdnlscXRxYWt3ZXhjamdqa3R1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwODA3OTgsImV4cCI6MjA5OTY1Njc5OH0.dl3Icafhlplh1_H6F8FOFde7ZflCEJgCcJxlyRgPGKs";
 
-// Supabase mijozini to'g'ri nom bilan yaratamiz
+// Supabase mijozini yaratamiz
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Asosiy xodimlar massivi va global o'zgaruvchilar
@@ -11,9 +11,9 @@ let selectedId = null;
 let searchQuery = "";
 let deptFilter = "all";
 
-// Brauzer birinchi marta ochilganda dastlabki ma'lumotlarni yuklash
+// Brauzer yuklanganda dastlabki ma'lumotlarni olish
 window.onload = async function() {
-    await fetchEmployees(); // Bazadan ma'lumotlarni yuklash
+    await fetchEmployees();
 };
 
 // Ilova boshlang'ich sozlamalarini yuklash
@@ -32,7 +32,7 @@ async function fetchEmployees() {
         console.error("Ma'lumot yuklashda xatolik:", error);
         alert("Ma'lumotlarni yuklashda xatolik yuz berdi!");
     } else {
-        // SQL bazadagi ustun nomlarini (ism, familiya...) eski JS kodingizdagi katta harfli (Ism, Familiya...) formatga o'tkazamiz
+        // SQL bazadagi kichik ustunlarni JS kodingizdagi katta harfli formatga moslashtiramiz
         EMPLOYEES = data.map(item => ({
             ID: item.id,
             Ism: item.ism || "",
@@ -44,7 +44,7 @@ async function fetchEmployees() {
             "Kuchli jihatlari": item.kuchli || ""
         }));
 
-        // Agar baza mutlaqo bo'sh bo'lsa va sizda 'employees.json' bo'lsa, undan yuklaydi
+        // Agar baza bo'sh bo'lsa JSON fayldan yuklashga harakat qiladi
         if (EMPLOYEES.length === 0) {
             await loadInitialDataFromJSON();
         } else {
@@ -53,13 +53,12 @@ async function fetchEmployees() {
     }
 }
 
-// Baza bo'sh bo'lsa JSON fayldan birinchi marta yuklab olish va bazaga yozish
+// Baza bo'sh bo'lsa JSON-dan dastlabki yuklash
 async function loadInitialDataFromJSON() {
     try {
         const response = await fetch('employees.json');
         const initialData = await response.json();
         
-        // JSON-dagi kalitlarni kichik harfli bazaviy ustunlarga moslashtiramiz
         const formattedData = initialData.map(item => ({
             ism: item.Ism || "",
             familiya: item.Familiya || "",
@@ -75,21 +74,24 @@ async function loadInitialDataFromJSON() {
             .insert(formattedData);
 
         if (!error) {
-            await fetchEmployees(); // Qayta yuklash
+            await fetchEmployees();
         } else {
-            console.error("JSON-ni bazaga yuklashda xato:", error);
+            console.error("JSON-ni bazaga yozishda xato:", error);
+            initApp(); // Xato bo'lsa ham dasturni boshlaymiz (bo'sh holda)
         }
     } catch (err) {
-        console.log("JSON topilmadi yoki yuklashda xato:", err);
+        console.log("JSON yuklashda xato yoki fayl mavjud emas:", err);
+        initApp();
     }
 }
 
 // Bo'lim filtri ro'yxatini shakllantirish
 function buildDeptFilter() {
     const deptSelect = document.getElementById("deptFilter");
-    const currentVal = deptSelect.value;
+    const currentVal = deptSelect ? deptSelect.value : "all";
     
-    // Takrorlanmas bo'limlar ro'yxati
+    if (!deptSelect) return;
+
     const departments = [...new Set(EMPLOYEES.map(e => e.Bolim).filter(Boolean))];
     
     deptSelect.innerHTML = '<option value="all">Barcha bo\'limlar</option>';
@@ -100,10 +102,10 @@ function buildDeptFilter() {
         deptSelect.appendChild(opt);
     });
     
-    deptSelect.value = currentVal;
+    deptSelect.value = departments.includes(currentVal) ? currentVal : "all";
 }
 
-// INITIALS OLISH
+// INITIALS (Ism-familiya bosh harflari)
 function initials(f, l) { 
     return ((f ? f[0] : '') + (l ? l[0] : '')).toUpperCase(); 
 }
@@ -122,7 +124,7 @@ function tenureText(dateStr) {
     return { txt, months };
 }
 
-// SANA FORMATLASH
+// SANA FORMATLASH (01-yanvar, 2026 shaklida)
 function formatDate(d) {
     if (!d) return "Sana kiritilmagan";
     const parts = d.split("-");
@@ -149,9 +151,8 @@ function selectEmployee(id) {
     renderListOnly();
 }
 
-// INTERFEYSNI YANGILASH (RENDER)
+// INTERFEYSNI TO'LIQ YANGILASH
 function render() {
-    buildDeptFilter();
     renderListOnly();
     renderDetail();
 }
@@ -168,9 +169,13 @@ function renderListOnly() {
     });
 
     const countEl = document.getElementById("resultCount");
-    countEl.innerText = `${filtered.length} ta xodim topildi (Jami: ${EMPLOYEES.length})`;
+    if (countEl) {
+        countEl.innerText = `${filtered.length} ta xodim topildi (Jami: ${EMPLOYEES.length})`;
+    }
 
     const empList = document.getElementById("empList");
+    if (!empList) return;
+
     if (filtered.length === 0) {
         empList.innerHTML = `<div style="text-align:center; padding: 25px; color: var(--text-muted); font-size:13px;">Xodim topilmadi.</div>`;
         return;
@@ -187,9 +192,11 @@ function renderListOnly() {
     `).join("");
 }
 
-// Batafsil sohani chizish
+// Batafsil ma'lumot panelini chizish
 function renderDetail() {
     const detailPanel = document.getElementById("detailPanel");
+    if (!detailPanel) return;
+
     if (!selectedId) {
         detailPanel.innerHTML = `
             <div class="detail-empty">
@@ -207,9 +214,8 @@ function renderDetail() {
     }
 
     const t = tenureText(e["Ishga kirgan sana"]);
-    const pct = Math.min(100, Math.round((t.months / 60) * 100)); // 5 yillik shkala
+    const pct = Math.min(100, Math.round((t.months / 60) * 100)); // 5 yillik faollik shkalasi
 
-    // Kuchli jihatlar teglari
     let skillsHtml = "Kiritilmagan";
     if (e["Kuchli jihatlari"]) {
         const list = e["Kuchli jihatlari"].split(",").map(i => i.trim()).filter(Boolean);
@@ -227,7 +233,6 @@ function renderDetail() {
                 </div>
             </div>
             
-            <!-- Edit va Delete Tugmalari -->
             <div style="display:flex; gap:8px;">
                 <button class="btn btn-blue btn-sm" onclick="openEditModal(${e.ID})">📝 Tahrirlash</button>
                 <button class="btn btn-red btn-sm" onclick="deleteEmployee(${e.ID})">🗑️ O'chirish</button>
@@ -270,7 +275,7 @@ function renderDetail() {
     `;
 }
 
-// 1. IMPORT TUGMASI VAZIFASI (Excel / JSON fayldan bazaga ommaviy yuklash)
+// 1. EXCEL/JSON IMPORT QILISH
 function triggerImport() {
     document.getElementById("excelFileInput").click();
 }
@@ -287,7 +292,6 @@ async function handleFileImport(event) {
             try {
                 const parsed = JSON.parse(e.target.result);
                 if (Array.isArray(parsed)) {
-                    // JSON datalarni bazadagi ustunlarga moslash
                     const formatted = parsed.map(item => ({
                         ism: item.Ism || "",
                         familiya: item.Familiya || "",
@@ -345,11 +349,12 @@ async function handleFileImport(event) {
         };
         reader.readAsArrayBuffer(file);
     }
+    event.target.value = ''; // Inputni tozalaymiz
 }
 
 // MODAL OYNALARNI BOSHQARISH
 function openAddModal() {
-    document.getElementById("modalTitle").innerText = "Yangi xodim qo'shish (Add)";
+    document.getElementById("modalTitle").innerText = "Yangi xodim qo'shish";
     document.getElementById("employeeForm").reset();
     document.getElementById("formEmployeeId").value = "";
     document.getElementById("saveBtn").innerText = "Tizimga qo'shish";
@@ -360,7 +365,7 @@ function openEditModal(id) {
     const e = EMPLOYEES.find(emp => emp.ID === id);
     if (!e) return;
 
-    document.getElementById("modalTitle").innerText = "Xodim ma'lumotlarini tahrirlash (Edit)";
+    document.getElementById("modalTitle").innerText = "Xodim ma'lumotlarini tahrirlash";
     document.getElementById("formEmployeeId").value = e.ID;
     document.getElementById("formIsm").value = e.Ism || "";
     document.getElementById("formFamiliya").value = e.Familiya || "";
@@ -384,69 +389,80 @@ function closeModal() {
     document.getElementById("employeeModal").classList.remove("active");
 }
 
-// FORM SAQLASH (SUPABASE GA YUBORISH: ADD & EDIT)
+// FORM SAQLASH (SUPABASE: QO'SHISH VA TAHRIRLASH)
 async function saveEmployee(event) {
-    event.preventDefault();
+    if (event) event.preventDefault();
     
-    const idVal = document.getElementById("formEmployeeId").value;
-    const ism = document.getElementById("formIsm").value;
-    const familiya = document.getElementById("formFamiliya").value;
-    const pinfl = document.getElementById("formPinfl").value;
-    const bolim = document.getElementById("formBolim").value;
-    const lavozim = document.getElementById("formLavozim").value;
-    const ishSana = document.getElementById("formIshSana").value;
-    const kuchli = document.getElementById("formKuchli").value;
+    const saveBtn = document.getElementById("saveBtn");
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerText = "Kuting...";
+    }
 
-    const payload = {
-        ism: ism,
-        familiya: familiya,
-        pinfl: pinfl,
-        bolim: bolim,
-        lavozim: lavozim,
-        ish_sana: ishSana,
-        kuchli: kuchli
-    };
+    try {
+        const idVal = document.getElementById("formEmployeeId").value;
+        const ism = document.getElementById("formIsm").value;
+        const familiya = document.getElementById("formFamiliya").value;
+        const pinfl = document.getElementById("formPinfl").value;
+        const bolim = document.getElementById("formBolim").value;
+        const lavozim = document.getElementById("formLavozim").value;
+        const ishSana = document.getElementById("formIshSana").value;
+        const kuchli = document.getElementById("formKuchli").value;
 
-    if (idVal) {
-        // EDIT REJIM: Supabase-da ma'lumotlarni yangilash
-        const { error } = await supabaseClient
-            .from('employees')
-            .update(payload)
-            .eq('id', parseInt(idVal));
+        const payload = {
+            ism: ism,
+            familiya: familiya,
+            pinfl: pinfl,
+            bolim: bolim,
+            lavozim: lavozim,
+            ish_sana: ishSana,
+            kuchli: kuchli
+        };
 
-        if (error) {
-            alert("Tahrirlashda xatolik: " + error.message);
-        } else {
+        if (idVal) {
+            // EDIT REJIM
+            const { error } = await supabaseClient
+                .from('employees')
+                .update(payload)
+                .eq('id', parseInt(idVal));
+
+            if (error) throw error;
             alert("Xodim ma'lumotlari tahrirlandi!");
-            closeModal();
-            await fetchEmployees();
-        }
-    } else {
-        // ADD REJIM: Supabase-ga yangi xodim qo'shish
-        const { data, error } = await supabaseClient
-            .from('employees')
-            .insert([payload])
-            .select();
-
-        if (error) {
-            alert("Qo'shishda xatolik: " + error.message);
         } else {
+            // ADD REJIM
+            const { data, error } = await supabaseClient
+                .from('employees')
+                .insert([payload])
+                .select();
+
+            if (error) throw error;
             alert("Yangi xodim qo'shildi!");
             if (data && data.length > 0) {
-                selectedId = data[0].id; // Avtomatik tanlash
+                selectedId = data[0].id; // Yangi qo'shilganini tanlaymiz
             }
-            closeModal();
-            await fetchEmployees();
+        }
+
+        closeModal();
+        await fetchEmployees(); // Ma'lumotlarni qayta yuklash va render qilish
+
+    } catch (err) {
+        console.error("Saqlashda xato:", err);
+        alert("Xatolik yuz berdi: " + err.message);
+    } finally {
+        if (saveBtn) {
+            const idVal = document.getElementById("formEmployeeId").value;
+            saveBtn.disabled = false;
+            saveBtn.innerText = idVal ? "O'zgarishlarni saqlash" : "Tizimga qo'shish";
         }
     }
 }
 
-// 4. DELETE TUGMASI VAZIFASI (SUPABASE DAN O'CHIRISH)
+// XODIMNI O'CHIRISH (DELETE)
 async function deleteEmployee(id) {
     const e = EMPLOYEES.find(emp => emp.ID === id);
     if (!e) return;
 
-    const conf = confirm(`${e.Ism} ${e.Familiya} xodimlar bazasidan butunlay o'chirilsinmi? (Bu amalni ortga qaytarib bo'lmaydi)`);
+    const conf = confirm(`${e.Ism} ${e.Familiya} xodimlar bazasidan butunlay o'chirilsinmi?`);
     if (conf) {
         const { error } = await supabaseClient
             .from('employees')
@@ -456,17 +472,17 @@ async function deleteEmployee(id) {
         if (error) {
             alert("O'chirishda xatolik yuz berdi: " + error.message);
         } else {
-            alert("Xodim muvaffaqiyatli o'chirildi!");
+            alert("Xodim o'chirildi!");
             if (selectedId === id) selectedId = null;
             await fetchEmployees();
         }
     }
 }
 
-// 5. DOWNLOAD TUGMASI VAZIFASI (EXCEL EKSPORT)
+// EXCELGA YUKLAB OLISH (EXPORT)
 function exportToExcel() {
     if (EMPLOYEES.length === 0) {
-        alert("Eksport qilish uchun hech qanday ma'lumot yo'q!");
+        alert("Eksport qilish uchun ma'lumot yo'q!");
         return;
     }
 
