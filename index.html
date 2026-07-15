@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fortuna Biznes — Xodimlar bazasi</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Excel bilan ishlash uchun SheetJS kutubxonasi (internet bo'lsa avtomatik ishlaydi, offline uchun yuklab olish tavsiya etiladi) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOP BAR (Fortuna Biznes Logotipi va Ranglar uyg'unligi) -->
+  <div class="topbar">
+    <div class="brand">
+      <img src="logo.jpg" alt="Fortuna Biznes Logo" class="brand-logo" onerror="this.src='https://placehold.co/100x100/1F3864/ffffff?text=FB'">
+      <div class="brand-text">
+        <div class="name">FORTUNA <b style="color: red;">BIZNES</b></div>
+        <div class="sub">Xodimlar boshqaruv tizimi</div>
+      </div>
+    </div>
+    
+    <!-- Amaliyotlar tugmalari paneli -->
+    <div class="actions-panel">
+      <!-- Import Input (Yashirin, tugma orqali ishga tushadi) -->
+      <input type="file" id="excelFileInput" accept=".xlsx, .xls, .json" style="display: none;" onchange="handleFileImport(event)">
+      <button class="btn btn-blue" onclick="triggerImport()"><span class="icon">📥</span> Import (.xlsx / .json)</button>
+      <button class="btn btn-red" onclick="openAddModal()"><span class="icon">➕</span> Xodim qo'shish</button>
+      <button class="btn btn-green" onclick="exportToExcel()"><span class="icon">📤</span> Yuklab olish</button>
+    </div>
+  </div>
+
+  <!-- ASOSIY ISHCHI SOHA -->
+  <div class="grid">
+    <!-- CHAP PANEL: Qidiruv va Ro'yxat -->
+    <div class="panel">
+      <h3>Qidiruv va Filtrlash</h3>
+      <input id="searchInput" class="search-input" placeholder="Ism, familiya yoki PINFL bo'yicha..." oninput="onSearch(this.value)">
+      <select id="deptFilter" class="dept-filter" onchange="onDeptChange(this.value)">
+        <option value="all">Barcha bo'limlar</option>
+      </select>
+      <div class="result-count" id="resultCount">0 ta xodim topildi</div>
+      <div class="emp-list" id="empList">
+        <!-- JS orqali to'ldiriladi -->
+      </div>
+    </div>
+
+    <!-- O'NG PANEL: Batafsil ma'lumot -->
+    <div class="panel detail" id="detailPanel">
+      <div class="detail-empty">
+        <div style="font-size:40px;">👥</div>
+        <div>Chap tomondagi ro'yxatdan xodimni tanlang<br>yoki Excel faylni tizimga import qiling.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footnote">
+    <strong>Tizim xabari: Sinov uchun</strong> 
+  </div>
+
+</div>
+
+<!-- MODAL OYNA: XODIM QO'SHISH VA TAHRIRLASH -->
+<div class="modal-overlay" id="employeeModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">Yangi xodim qo'shish</h3>
+      <span class="close-btn" onclick="closeModal()">&times;</span>
+    </div>
+    <form id="employeeForm" onsubmit="saveEmployee(event)">
+      <input type="hidden" id="formEmployeeId">
+      
+      <div class="form-group">
+        <label for="formIsm">Ismi <span class="required">*</span></label>
+        <input type="text" id="formIsm" required placeholder="Masalan: Dilnoza">
+      </div>
+      
+      <div class="form-group">
+        <label for="formFamiliya">Familiyasi <span class="required">*</span></label>
+        <input type="text" id="formFamiliya" required placeholder="Masalan: Yusupova">
+      </div>
+      
+      <div class="form-group">
+        <label for="formPinfl">PINFL (14 xonali son) <span class="required">*</span></label>
+        <input type="text" id="formPinfl" required pattern="\d{14}|[3-4]xxxxxxxxxxxx\d{3}" placeholder="Masalan: 3110389123482">
+      </div>
+
+      <div class="form-group">
+        <label for="formBolim">Bo'limi <span class="required">*</span></label>
+        <input type="text" id="formBolim" required placeholder="Masalan: Moliya bo'limi" list="deptSuggestions">
+        <datalist id="deptSuggestions">
+          <option value="Moliya bo'limi">
+          <option value="IT bo'limi">
+          <option value="HR bo'limi">
+          <option value="Sotuv bo'limi">
+          <option value="Marketing bo'limi">
+          <option value="Yuridik bo'lim">
+        </datalist>
+      </div>
+
+      <div class="form-group">
+        <label for="formLavozim">Lavozimi <span class="required">*</span></label>
+        <input type="text" id="formLavozim" required placeholder="Masalan: Bosh hisobchi">
+      </div>
+
+      <div class="form-group">
+        <label for="formIshSana">Ishga kirgan sana <span class="required">*</span></label>
+        <input type="date" id="formIshSana" required>
+      </div>
+
+      <div class="form-group">
+        <label for="formKuchli">Kuchli jihatlari va qobiliyatlari (vergul bilan ajratilgan)</label>
+        <input type="text" id="formKuchli" placeholder="Masalan: SQL, Excel, Muzokaralar">
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">Bekor qilish</button>
+        <button type="submit" class="btn btn-red" id="saveBtn">Saqlash</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
